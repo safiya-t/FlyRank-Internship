@@ -47,5 +47,20 @@ async def create_task(task: Task):
     }
     tasks.append(new_task)
     return new_task
+
+@app.put("/tasks/{task_id}")
+async def update_task(task_id: int, task: Task):
+    for t in tasks:
+        if t["id"] == task_id:
+            if task.title == "":
+                raise HTTPException(status_code=400, 
+                                    detail={"error": "Title cannot be empty"})
+            t["title"] = task.title
+            t["done"] = task.done
+            return t    
+    raise HTTPException(status_code=404, detail={"error": "Task not found"})
+
+
+    
      
         
