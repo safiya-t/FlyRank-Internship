@@ -3,6 +3,8 @@
 A lightweight RESTful Task Management API built using **FastAPI**. The application provides CRUD (Create, Read, Update, Delete) functionality for managing tasks and follows REST architecture principles.
 
 ---
+<img width="1583" height="930" alt="Screenshot 2026-07-21 203808" src="https://github.com/user-attachments/assets/c460fa9a-3ae6-4f09-af95-bc3f0de838e4" />
+
 
 # Overview
 
