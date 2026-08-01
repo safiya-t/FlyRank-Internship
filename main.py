@@ -25,16 +25,63 @@ async def health():
     return {"status": "healthy"}
 
 @app.get("/tasks")
-async def get_tasks():
+async def get_tasks( done: bool = None, title: str = None):
+    conn = get_connection()
+
+    query = "SELECT * FROM tasks"
+    params = []
+
+    conditions = []
+
+    if done is not None:
+        conditions.append("done = ?")
+        params.append(int(done))
+
+    if title:
+        conditions.append("title LIKE ?")
+        params.append(f"%{title}%")
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+
+    rows = conn.execute(query, params).fetchall()
+
+    conn.close()
+
+    return [
+        {
+            "id": row["id"],
+            "title": row["title"],
+            "done": bool(row["done"])
+        }
+        for row in rows
+    ]
     return tasks
 
 @app.get("/tasks/{task_id}")
 async def get_task(task_id: int):
-    for task in tasks:
-        if task["id"] == task_id:
-            return task
-        raise HTTPException(status_code=404,
-                             detail={"error": "Task not found"})
+    conn = get_connection()
+
+    row = conn.execute(
+        "SELECT * FROM tasks WHERE id = ?",
+        (task_id,)
+    ).fetchone()
+
+    conn.close()
+
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Task {task_id} not found"
+        )
+
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "done": bool(row["done"])
+    }
+    
+    
     
 class Task(BaseModel):
     title: str
