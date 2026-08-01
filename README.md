@@ -2,6 +2,8 @@
 
 A lightweight RESTful Task Management API built with **FastAPI** and **Pydantic**. This project provides CRUD operations for tasks using an in-memory data store and exposes interactive API documentation through Swagger UI.
 
+<img width="1583" height="930" alt="Screenshot 2026-07-21 203808" src="https://github.com/user-attachments/assets/abc8ac19-3d30-402c-b832-7213a7834efe" />
+
 ---
 
 ## Features
@@ -26,7 +28,7 @@ A lightweight RESTful Task Management API built with **FastAPI** and **Pydantic*
 
 ```text
 task-api/
-¦
+Â¦
 +-- main.py
 +-- database.py
 +-- requirements.txt
