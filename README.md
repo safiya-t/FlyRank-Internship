@@ -1,117 +1,87 @@
 # Task API
 
-A lightweight RESTful Task Management API built using **FastAPI**. The application provides CRUD (Create, Read, Update, Delete) functionality for managing tasks and follows REST architecture principles.
+A lightweight RESTful Task Management API built with **FastAPI** and **Pydantic**. This project provides CRUD operations for tasks using an in-memory data store and exposes interactive API documentation through Swagger UI.
 
 ---
 
-# Overview
+## Features
 
-The **Task API** is designed to manage a simple to-do list using an in-memory Python list. Since no database is used, all data is reset whenever the server restarts. The API uses **Pydantic** for request validation and automatically generates interactive API documentation through **Swagger UI**.
-
-Each task contains the following fields:
-
-| Field     | Description                                            |
-| --------- | ------------------------------------------------------ |
-| **ID**    | Unique identifier for each task                        |
-| **Title** | Name or description of the task                        |
-| **Done**  | Boolean value indicating whether the task is completed |
+- Create, read, update, and delete tasks
+- Request validation with Pydantic
+- FastAPI-generated Swagger UI and ReDoc documentation
+- Simple in-memory storage for quick local testing
 
 ---
 
-# Features
+## Technology Stack
 
-| Feature               | Description                                        |
-| --------------------- | -------------------------------------------------- |
-| RESTful API           | Implements CRUD operations using HTTP methods      |
-| Create Tasks          | Add new tasks                                      |
-| Read Tasks            | Retrieve all tasks or a specific task              |
-| Update Tasks          | Modify an existing task                            |
-| Delete Tasks          | Remove tasks from the list                         |
-| Request Validation    | Validates incoming request data using Pydantic     |
-| Error Handling        | Returns appropriate HTTP status codes and messages |
-| Swagger Documentation | Interactive API documentation and testing          |
-| In-Memory Storage     | Stores tasks in a Python list without a database   |
+- Python
+- FastAPI
+- Uvicorn
+- Pydantic
 
 ---
 
-# Technology Stack
-
-| Technology | Purpose              |
-| ---------- | -------------------- |
-| Python     | Programming language |
-| FastAPI    | Backend framework    |
-| Uvicorn    | ASGI server          |
-| Pydantic   | Request validation   |
-
----
-
-# Project Structure
+## Project Structure
 
 ```text
 task-api/
-│
-├── main.py
-├── requirements.txt
-├── README.md
-└── .gitignore
+�
++-- main.py
++-- database.py
++-- requirements.txt
++-- README.md
++-- .gitignore
 ```
 
 ---
 
-# Running the Application
+## Running the Application
 
-Follow these steps to run the project locally.
-
-| Step                                | Command / Action                       |
-| ----------------------------------- | -------------------------------------- |
-| **1. Activate Virtual Environment** | `.\.venv\Scripts\Activate.ps1`         |
-| **2. Install Dependencies**         | `pip install fastapi uvicorn pydantic` |
-| **3. Start the Server**             | `uvicorn main:app --reload`            |
-| **4. Open Swagger UI**              | `http://127.0.0.1:8000/docs`           |
-| **5. Open ReDoc**                   | `http://127.0.0.1:8000/redoc`          |
-
-### Activate the Virtual Environment
+1. Activate the virtual environment:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 ```
 
-### Install Dependencies
+2. Install dependencies:
 
 ```powershell
-pip install fastapi uvicorn pydantic
+pip install -r requirements.txt
 ```
 
-### Start the Server
+3. Start the server:
 
 ```powershell
 uvicorn main:app --reload
 ```
+```
 
-### API Documentation
+4. Open Swagger UI:
 
-| Documentation | URL                           |
-| ------------- | ----------------------------- |
-| Swagger UI    | `http://127.0.0.1:8000/docs`  |
-| ReDoc         | `http://127.0.0.1:8000/redoc` |
+`http://127.0.0.1:8000/docs`
 
----
+5. Open ReDoc:
 
-# API Endpoints
-
-| Method | Endpoint      | Description                                  |
-| :----: | ------------- | -------------------------------------------- |
-|   GET  | `/`           | Returns API information                      |
-|   GET  | `/health`     | Returns the health status of the application |
-|   GET  | `/tasks`      | Retrieves all tasks                          |
-|   GET  | `/tasks/{id}` | Retrieves a task by its ID                   |
-|  POST  | `/tasks`      | Creates a new task                           |
-|   PUT  | `/tasks/{id}` | Updates an existing task                     |
-| DELETE | `/tasks/{id}` | Deletes a task                               |
+`http://127.0.0.1:8000/redoc`
 
 ---
 
-# Example Requests
+## API Endpoints
+
+| Method | Endpoint | Description |
+| ------ | -------- | ----------- |
+| GET | `/` | Return API information |
+| GET | `/health` | Return health status |
+| GET | `/tasks` | Retrieve all tasks |
+| GET | `/tasks/{task_id}` | Retrieve a task by ID |
+| POST | `/tasks` | Create a new task |
+| PUT | `/tasks/{task_id}` | Update an existing task |
+| DELETE | `/tasks/{task_id}` | Delete a task |
+
+---
+
+## Example Request
 
 ### Create a Task
 
@@ -119,11 +89,12 @@ uvicorn main:app --reload
 
 ```json
 {
-  "title": "Complete FastAPI Assignment"
+  "title": "Complete FastAPI Assignment",
+  "done": false
 }
 ```
 
-**Response**
+### Example Response
 
 ```json
 {
@@ -135,100 +106,7 @@ uvicorn main:app --reload
 
 ---
 
-### Update a Task
+## Notes
 
-**Request Body**
-
-```json
-{
-  "title": "Submit Assignment",
-  "done": true
-}
-```
-
-**Response**
-
-```json
-{
-  "id": 1,
-  "title": "Submit Assignment",
-  "done": true
-}
-```
-
----
-
-### Get All Tasks
-
-**Response**
-
-```json
-[
-  {
-    "id": 1,
-    "title": "Study FastAPI",
-    "done": false
-  },
-  {
-    "id": 2,
-    "title": "Complete Assignment",
-    "done": true
-  }
-]
-```
-
----
-
-### Get Task by ID
-
-**Response**
-
-```json
-{
-  "id": 1,
-  "title": "Study FastAPI",
-  "done": false
-}
-```
-
----
-
-### Delete a Task
-
-**Response**
-
-```
-204 No Content
-```
-
----
-
-# Application Flow
-
-```text
-                     User / Client
-                          │
-                          ▼
-                   HTTP Request
-                          │
-                          ▼
-               FastAPI Application
-                    (main.py)
-                          │
-          ┌───────────────┼───────────────┐
-          │               │               │
-          ▼               ▼               ▼
-   Validate Request   Process Request   Find Task
-      (Pydantic)                         by ID
-          │               │               │
-          └───────────────┼───────────────┘
-                          ▼
-                 In-Memory Task List
-           (Create • Read • Update • Delete)
-                          │
-                          ▼
-                   HTTP Response
-                          │
-                          ▼
-               Browser / Swagger UI
-```
+- This application uses an in-memory list. Data is reset when the server restarts.
+- The `requirements.txt` file includes the packages required to run the API locally.
