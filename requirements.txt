@@ -1,0 +1,4 @@
+Python 3.10.0
+fastapi
+uvicorn[standard]
+Swagger-UI /docs

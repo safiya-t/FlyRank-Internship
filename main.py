@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi import Response
+from database import get_connection, init_db
 
 app = FastAPI()
 
@@ -10,6 +11,10 @@ tasks = [
     { "id": 2, "title": "complete assignments", "done": True },
     { "id": 3, "title": "practice DSA", "done": False }
 ]
+
+@app.on_event("startup")
+async def startup():
+          init_db()
 
 @app.get("/")
 async def root():
