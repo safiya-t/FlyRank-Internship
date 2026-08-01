@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from fastapi import FastAPI
 from pydantic import BaseModel
-from fastapi import Response
+from fastapi import Response, status
 from database import get_connection, init_db
 
 app = FastAPI()
@@ -122,24 +122,79 @@ async def create_task(task: Task):
     }
 
 @app.put("/tasks/{task_id}")
-async def update_task(task_id: int, task: Task):
-    for t in tasks:
-        if t["id"] == task_id:
-            if task.title == "":
-                raise HTTPException(status_code=400, 
-                                    detail={"error": "Title cannot be empty"})
-            t["title"] = task.title
-            t["done"] = task.done
-            return t    
-    raise HTTPException(status_code=404, detail={"error": "Task not found"})
+def update_task(task_id: int, updated_task: Task):
 
-@app.delete("/tasks/{task_id}", status_code=204)
-async def delete_task(task_id: int):
-    for t in tasks:
-        if t["id"] == task_id:
-            tasks.remove(t)
-            return Response(status_code=204)
-    raise HTTPException(status_code=404, detail={"error": "Task not found"})
+    conn = get_connection()
+
+    existing = conn.execute(
+        "SELECT * FROM tasks WHERE id = ?",
+        (task_id,)
+    ).fetchone()
+
+    if existing is None:
+        conn.close()
+
+        raise HTTPException(
+            status_code=404,
+            detail=f"Task {task_id} not found"
+        )
+
+    conn.execute(
+        """
+        UPDATE tasks
+        SET title = ?, done = ?
+        WHERE id = ?
+        """,
+        (
+            updated_task.title,
+            int(updated_task.done),
+            task_id
+        )
+    )
+
+    conn.commit()
+
+    row = conn.execute(
+        "SELECT * FROM tasks WHERE id = ?",
+        (task_id,)
+    ).fetchone()
+
+    conn.close()
+
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "done": bool(row["done"])
+    }
+
+
+@app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_task(task_id: int):
+
+    conn = get_connection()
+
+    existing = conn.execute(
+        "SELECT * FROM tasks WHERE id = ?",
+        (task_id,)
+    ).fetchone()
+
+    if existing is None:
+        conn.close()
+
+        raise HTTPException(
+            status_code=404,
+            detail=f"Task {task_id} not found"
+        )
+
+    conn.execute(
+        "DELETE FROM tasks WHERE id = ?",
+        (task_id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
     
