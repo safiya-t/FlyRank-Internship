@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, params
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi import Response, status
@@ -27,45 +27,48 @@ async def health():
 @app.get("/tasks")
 async def get_tasks( done: bool = None, title: str = None):
     conn = get_connection()
+    cursor = conn.cursor()
 
-    query = "SELECT * FROM tasks"
+    query = "SELECT id, title, done FROM tasks"
     params = []
-
+    
     conditions = []
 
     if done is not None:
-        conditions.append("done = ?")
-        params.append(int(done))
+       conditions.append("done = %s")
+       params.append(done)
 
     if title:
-        conditions.append("title LIKE ?")
-        params.append(f"%{title}%")
+       conditions.append("title ILIKE %s")
+       params.append(f"%{title}%")
 
     if conditions:
-        query += " WHERE " + " AND ".join(conditions)
+       query += " WHERE " + " AND ".join(conditions)
 
-    rows = conn.execute(query, params).fetchall()
+    cursor.execute(query, tuple(params))
+    rows = cursor.fetchall()
 
-    conn.close()
-
+    conn.close() 
     return [
-        {
-            "id": row["id"],
-            "title": row["title"],
-            "done": bool(row["done"])
-        }
-        for row in rows
-    ]
-    return tasks
+    {
+        "id": row[0],
+        "title": row[1],
+        "done": row[2]
+    }
+    for row in rows
+ ] 
 
 @app.get("/tasks/{task_id}")
 async def get_task(task_id: int):
     conn = get_connection()
+    cursor = conn.cursor()
 
-    row = conn.execute(
-        "SELECT * FROM tasks WHERE id = ?",
-        (task_id,)
-    ).fetchone()
+    cursor.execute(
+    "SELECT id, title, done FROM tasks WHERE id = %s",
+    (task_id,)
+    )
+
+    row = cursor.fetchone()
 
     conn.close()
 
@@ -76,9 +79,9 @@ async def get_task(task_id: int):
         )
 
     return {
-        "id": row["id"],
-        "title": row["title"],
-        "done": bool(row["done"])
+    "id": row[0],
+    "title": row[1],
+    "done": row[2]
     }
     
     
@@ -116,9 +119,9 @@ async def create_task(task: Task):
     conn.close()
 
     return {
-        "id": row["id"],
-        "title": row["title"],
-        "done": bool(row["done"])
+        "id": row[0],
+        "title": row[1],
+        "done": row[2]
     }
 
 @app.put("/tasks/{task_id}")
