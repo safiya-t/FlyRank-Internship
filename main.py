@@ -4,13 +4,10 @@ from pydantic import BaseModel
 from fastapi import Response, status
 from database import get_connection, init_db
 
-app = FastAPI()
-
-tasks = [
-    { "id": 1, "title": "Buy groceries", "done": False },
-    { "id": 2, "title": "complete assignments", "done": True },
-    { "id": 3, "title": "practice DSA", "done": False }
-]
+app = FastAPI(
+    title="Task API",
+    description=" A CRUD REST API built with FastAPI and PostgreSQL for managing tasks."
+)
 
 @app.on_event("startup")
 async def startup():
