@@ -1,18 +1,23 @@
 # Task API
 
-A lightweight RESTful Task Management API built with **FastAPI**, **Pydantic**, and **SQLite**. The API supports creating, reading, updating, and deleting tasks while storing data persistently in a SQLite database.
-
-<img width="1583" height="930" alt="Swagger UI Screenshot" src="https://github.com/user-attachments/assets/abc8ac19-3d30-402c-b832-7213a7834efe" />
+A lightweight RESTful Task Management API built with **FastAPI**, **Pydantic**, and **PostgreSQL**. The API supports creating, reading, updating, and deleting tasks while storing data persistently in a PostgreSQL database running inside Docker.
 
 ---
 
 ## Features
 
-* Create, read, update, and delete tasks
-* Persistent data storage using SQLite
-* Request validation with Pydantic
-* Interactive API documentation with Swagger UI and ReDoc
-* Filter tasks by completion status and title
+| Feature | Description |
+|---------|-------------|
+| Task Management | Create, read, update, and delete tasks using RESTful API endpoints. |
+| Persistent Data Storage | Stores task data permanently using PostgreSQL database. |
+| Dockerized Database | PostgreSQL runs inside a Docker container for easy setup and deployment. |
+| Docker Compose Support | Runs the FastAPI application and PostgreSQL database together using a single command. |
+| Request Validation | Uses Pydantic models to validate incoming API request data. |
+| Interactive API Documentation | Provides automatically generated Swagger UI and ReDoc documentation. |
+| Task Filtering | Allows filtering tasks based on completion status and title. |
+| Environment Configuration | Uses environment variables to securely manage database credentials and configuration. |
+| Database Persistence | Maintains stored data even after restarting Docker containers using volumes. |
+| Health Monitoring | Includes health check endpoint to verify API availability. |
 
 ---
 
@@ -21,7 +26,10 @@ A lightweight RESTful Task Management API built with **FastAPI**, **Pydantic**, 
 * Python
 * FastAPI
 * Pydantic
-* SQLite
+* PostgreSQL
+* Docker
+* Docker Compose
+* Psycopg
 * Uvicorn
 
 ---
@@ -32,33 +40,56 @@ A lightweight RESTful Task Management API built with **FastAPI**, **Pydantic**, 
 task-api/
 ├── main.py
 ├── database.py
-├── tasks.db
+├── Dockerfile
+├── compose.yaml
 ├── requirements.txt
+├── .env.example
+├── .gitignore
 ├── README.md
-└── .gitignore
+└── screenshots/
+    └── tasks database.png
 ```
 
 ---
 
 ## Running the Application
 
-### 1. Activate the virtual environment
+### 1. Create environment file
+
+Copy `.env.example` and create `.env`
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
+cp .env.example .env
 ```
 
-### 2. Install dependencies
+Example `.env`:
+
+```env
+DATABASE_URL=postgres://username:password@localhost:5432/tasks
+```
+---
+
+### 2. Start the application using Docker Compose
 
 ```powershell
-pip install -r requirements.txt
+docker compose up
 ```
 
-### 3. Start the server
+This starts:
+
+* FastAPI application
+* PostgreSQL database
+* Database volume for persistent storage
+
+---
+
+### 3. Stop the application
 
 ```powershell
-uvicorn main:app --reload
+docker compose down
 ```
+
+---
 
 ### 4. Open the API documentation
 
@@ -86,7 +117,7 @@ http://127.0.0.1:8000/redoc
 | GET    | `/tasks/{task_id}` | Retrieve a task by ID   |
 | POST   | `/tasks`           | Create a new task       |
 | PUT    | `/tasks/{task_id}` | Update an existing task |
-| DELETE | `/tasks/{task_id}` | Delete a task           |
+| DELETE | `/tasks/{task_id}` | Delete a task            |
 
 ---
 
@@ -114,19 +145,59 @@ http://127.0.0.1:8000/redoc
 
 ---
 
-## SQLite Database
+## Example curl Output
 
-The project uses a SQLite database named `tasks.db`.
+Retrieve all tasks:
+
+```powershell
+curl -i http://localhost:8000/tasks
+```
+
+Response:
+
+```http
+HTTP/1.1 200 OK
+content-type: application/json
+
+[
+  {
+    "id": 1,
+    "title": "Learn FastAPI",
+    "done": false
+  },
+  {
+    "id": 2,
+    "title": "Learn Docker",
+    "done": false
+  }
+]
+```
+
+---
+
+## PostgreSQL Database
+
+The project uses a PostgreSQL database running inside a Docker container.
 
 When the application starts for the first time:
 
-* The database is created automatically.
+* The PostgreSQL database is created automatically.
 * The `tasks` table is created if it does not already exist.
 * Sample tasks are inserted automatically.
+* Data remains available after restarting containers because of Docker volume persistence.
 
-Changes made through the API remain available after restarting the server.
+Database table:
 
-![alt text](<tasks database.png>)
+```sql
+CREATE TABLE tasks (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    done BOOLEAN NOT NULL
+);
+```
+
+Changes made through the API remain available after restarting the application.
+
 ---
 
 ## Example SQL Queries
@@ -140,7 +211,7 @@ SELECT * FROM tasks;
 Retrieve completed tasks:
 
 ```sql
-SELECT * FROM tasks WHERE done = 1;
+SELECT * FROM tasks WHERE done = true;
 ```
 
 Count all tasks:
@@ -153,28 +224,41 @@ Update all tasks as completed:
 
 ```sql
 UPDATE tasks
-SET done = 1;
+SET done = true;
 ```
 
 Delete completed tasks:
 
 ```sql
 DELETE FROM tasks
-WHERE done = 1;
+WHERE done = true;
 ```
 
 ---
 
-## DB Browser for SQLite
+## PostgreSQL Database Tools
 
-Open `tasks.db` using **DB Browser for SQLite** to:
+Open PostgreSQL using:
+
+```powershell
+docker exec -it taskdb psql -U postgres -d tasks
+```
+
+Use PostgreSQL commands to:
 
 * View stored records
 * Execute SQL queries
-* Edit task data directly
 * Verify database persistence
 
-(Add your DB Browser screenshot here.)
+Example:
+
+```sql
+\dt
+
+SELECT * FROM tasks;
+```
+
+(Add your PostgreSQL screenshot here.)
 
 ---
 
@@ -186,10 +270,35 @@ Install all dependencies using:
 pip install -r requirements.txt
 ```
 
+`requirements.txt`
+
+```
+fastapi
+uvicorn[standard]
+psycopg[binary]
+python-dotenv
+```
+
+---
+
+## Environment Variables
+
+The application uses `.env` for database configuration.
+
+`.env.example`
+
+```env
+DATABASE_URL=postgres://username:password@db:5432/tasks
+```
+
+The `.env` file is ignored by Git and should not be committed.
+
 ---
 
 ## Notes
 
-* Task data is stored persistently in SQLite.
-* `tasks.db` is created automatically when the application is started.
+* Task data is stored persistently in PostgreSQL.
+* PostgreSQL runs inside a Docker container.
+* Docker Compose starts the complete application stack using one command.
+* Database credentials are stored securely using environment variables.
 * FastAPI automatically generates interactive API documentation.
