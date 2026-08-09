@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 import psycopg
 import time
-from supabase import create_client
+from supabase import Client, create_client
 
 load_dotenv()
 
@@ -11,7 +11,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def get_connection():
     for i in range(10):

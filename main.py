@@ -2,7 +2,7 @@ from fastapi import HTTPException, params
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi import Response, status
-from database import get_connection, init_db
+from database import get_connection, init_db, supabase
 
 app = FastAPI(
     title="Task API",
@@ -13,14 +13,20 @@ app = FastAPI(
 async def startup():
           init_db()
 
+class Task(BaseModel):
+    title: str
+    done: bool
+
+
+##
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
+##
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
-
+##
 @app.get("/tasks")
 async def get_tasks( done: bool = None, title: str = None):
     conn = get_connection()
@@ -54,7 +60,7 @@ async def get_tasks( done: bool = None, title: str = None):
     }
     for row in rows
  ] 
-
+##
 @app.get("/tasks/{task_id}")
 async def get_task(task_id: int):
     conn = get_connection()
@@ -80,13 +86,7 @@ async def get_task(task_id: int):
     "title": row[1],
     "done": row[2]
     }
-    
-    
-    
-class Task(BaseModel):
-    title: str
-    done: bool
-
+ ##   
 @app.post("/tasks", status_code=201)
 async def create_task(task: Task):
 
@@ -115,8 +115,7 @@ async def create_task(task: Task):
         "title": new_task[1],
         "done": new_task[2]
     }
-    
-
+##
 @app.put("/tasks/{task_id}")
 def update_task(task_id: int, updated_task: Task):
 
@@ -163,7 +162,7 @@ def update_task(task_id: int, updated_task: Task):
         "title": updated_task[1],
         "done": updated_task[2]
      }
-
+##
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_task(task_id: int):
 
@@ -196,6 +195,79 @@ def delete_task(task_id: int):
     conn.close()
 
     return
+    
+##Auth and signup
+class AuthRequest(BaseModel):
+    email: str
+    password: str          
+
+@app.post("/auth/signup", status_code=status.HTTP_201_CREATED)
+def signup(data: AuthRequest):
+
+    print("EMAIL RECEIVED:", repr(data.email), flush=True)
+
+    if not data.email or not data.password:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "Email and password are required"}
+        )
+
+    try:
+        response = supabase.auth.sign_up({
+            "email": data.email,
+            "password": data.password
+        })
+
+        return {
+            "user": response.user.model_dump() if response.user else None
+        }
+
+    except Exception as e:
+     print("SUPABASE ERROR:", repr(e), flush=True)
+     raise HTTPException(
+        status_code=400,
+        detail=str(e)
+    )
+##
+@app.post("/auth/login")
+def login(data: AuthRequest):
+    if not data.email or not data.password:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "Email and password are required"}
+        )
+
+    try:
+        response = supabase.auth.sign_in_with_password({
+            "email": data.email,
+            "password": data.password
+        })
+
+        if not response.session:
+            raise HTTPException(
+                status_code=401,
+                detail={"error": "Invalid login credentials"}
+            )
+
+        return {
+            "access_token": response.session.access_token,
+            "refresh_token": response.session.refresh_token
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "Invalid login credentials"}
+        )
+
+@app.get("/auth/user")
+def get_user():
+    return {
+        "message": "FlyRank Auth API is running"
+    }
 
 
     
