@@ -1,5 +1,4 @@
-from fastapi import HTTPException, Header
-from fastapi import FastAPI
+from fastapi import HTTPException, Header,FastAPI
 from pydantic import BaseModel
 from fastapi import Response, status
 from database import get_connection, init_db, supabase
@@ -270,9 +269,7 @@ def public_info():
     }
 
 @app.get("/protected/profile")
-def protected_profile(
-    authorization: str | None = Header(default=None)
-):
+def protected_profile(authorization: str | None = Header(default=None, alias="Authorization")):
 
     if not authorization:
         raise HTTPException(
@@ -294,10 +291,18 @@ def protected_profile(
             detail={"error": "Access token required"}
         )
 
+    try:
+        response = supabase.auth.get_user(token)
+        user = response.user
+
+    except Exception:
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "Invalid or expired token"}
+        )
+
     return {
-        "message": "Token received",
-        "token": token
-    }
-    
-     
-        
+        "id": user.id,
+        "email": user.email,
+        "created_at": user.created_at
+    }      
