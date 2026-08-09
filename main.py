@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Header,FastAPI
 from pydantic import BaseModel
-from fastapi import Response, status
+from fastapi import Response, status,Depends,Request
 from database import get_connection, init_db, supabase
 
 app = FastAPI(
@@ -268,19 +268,13 @@ def public_info():
         "message": "Welcome stranger! This info is public."
     }
 
-@app.get("/protected/profile")
-def protected_profile(authorization: str | None = Header(default=None, alias="Authorization")):
+def get_current_user(request: Request):
+    authorization = request.headers.get("Authorization")
 
-    if not authorization:
+    if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=401,
-            detail={"error": "Access token required"}
-        )
-
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401,
-            detail={"error": "Access token required"}
+            detail={"error": "Authorization header required"}
         )
 
     token = authorization.split(" ", 1)[1]
@@ -288,21 +282,57 @@ def protected_profile(authorization: str | None = Header(default=None, alias="Au
     if not token:
         raise HTTPException(
             status_code=401,
-            detail={"error": "Access token required"}
+            detail={"error": "Token is required"}
         )
 
     try:
         response = supabase.auth.get_user(token)
-        user = response.user
+
+        if not response.user:
+            raise HTTPException(
+                status_code=401,
+                detail={"error": "Invalid or expired token"}
+            )
+
+        return response.user
+
+    except HTTPException:
+        raise
 
     except Exception:
         raise HTTPException(
             status_code=401,
             detail={"error": "Invalid or expired token"}
-        )
-
+        )     
+    
+@app.get("/protected/profile")
+def protected_profile(
+    current_user=Depends(get_current_user)
+):
     return {
-        "id": user.id,
-        "email": user.email,
-        "created_at": user.created_at
-    }      
+        "id": current_user.id,
+        "email": current_user.email,
+        "created_at": current_user.created_at
+    }    
+
+@app.get("/protected/dashboard")
+def protected_dashboard(current_user=Depends(get_current_user)):
+    return {
+        "message": "Welcome to your protected dashboard",
+        "user_id": current_user.id,
+        "email": current_user.email
+    }
+
+@app.post("/auth/logout", status_code=204)
+def logout(
+    current_user=Depends(get_current_user)
+):
+    try:
+        supabase.auth.sign_out()
+        return Response(status_code=204)
+
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "Logout failed"}
+        )
