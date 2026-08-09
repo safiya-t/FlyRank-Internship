@@ -1,4 +1,4 @@
-from fastapi import HTTPException, params
+from fastapi import HTTPException, Header
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi import Response, status
@@ -263,13 +263,41 @@ def login(data: AuthRequest):
             detail={"error": "Invalid login credentials"}
         )
 
-@app.get("/auth/user")
-def get_user():
+@app.get("/public/info")
+def public_info():
     return {
-        "message": "FlyRank Auth API is running"
+        "message": "Welcome stranger! This info is public."
     }
 
+@app.get("/protected/profile")
+def protected_profile(
+    authorization: str | None = Header(default=None)
+):
 
+    if not authorization:
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "Access token required"}
+        )
+
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "Access token required"}
+        )
+
+    token = authorization.split(" ", 1)[1]
+
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "Access token required"}
+        )
+
+    return {
+        "message": "Token received",
+        "token": token
+    }
     
      
         
