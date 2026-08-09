@@ -2,6 +2,9 @@ from fastapi import HTTPException, Header,FastAPI
 from pydantic import BaseModel
 from fastapi import Response, status,Depends,Request
 from database import get_connection, init_db, supabase
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer()
 
 app = FastAPI(
     title="Task API",
@@ -268,59 +271,35 @@ def public_info():
         "message": "Welcome stranger! This info is public."
     }
 
-def get_current_user(request: Request):
-    authorization = request.headers.get("Authorization")
-
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401,
-            detail={"error": "Authorization header required"}
-        )
-
-    token = authorization.split(" ", 1)[1]
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    token = credentials.credentials
 
     if not token:
         raise HTTPException(
             status_code=401,
-            detail={"error": "Token is required"}
+            detail="Invalid or missing token"
         )
 
-    try:
-        response = supabase.auth.get_user(token)
-
-        if not response.user:
-            raise HTTPException(
-                status_code=401,
-                detail={"error": "Invalid or expired token"}
-            )
-
-        return response.user
-
-    except HTTPException:
-        raise
-
-    except Exception:
-        raise HTTPException(
-            status_code=401,
-            detail={"error": "Invalid or expired token"}
-        )     
-    
+    return token
+ 
 @app.get("/protected/profile")
 def protected_profile(
-    current_user=Depends(get_current_user)
+    token: str = Depends(get_current_user)
 ):
     return {
-        "id": current_user.id,
-        "email": current_user.email,
-        "created_at": current_user.created_at
-    }    
+        "message": "You are authorized",
+        "token": token
+    }   
 
 @app.get("/protected/dashboard")
-def protected_dashboard(current_user=Depends(get_current_user)):
+def protected_dashboard(
+    token: str = Depends(get_current_user)
+):
     return {
-        "message": "Welcome to your protected dashboard",
-        "user_id": current_user.id,
-        "email": current_user.email
+        "message": "Welcome to the protected dashboard",
+        "token": token
     }
 
 @app.post("/auth/logout", status_code=204)
