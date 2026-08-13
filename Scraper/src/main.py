@@ -34,4 +34,4 @@ else:
     with open(CACHE_FILE, "w", encoding="utf-8") as file:
         file.write(html)
 
-print(f"Response size: {len(html)} bytes")
+print(f"Response size: {len(html)} bytes") 
