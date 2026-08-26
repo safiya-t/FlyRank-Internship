@@ -1,8 +1,9 @@
 import os , requests
-import time
+import time ,json
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from datetime import datetime , timezone
+from pydantic import BaseModel , HttpUrl
 
 url = "https://books.toscrape.com/"
 CACHE_FILE = "cache/catalogue-page-1.html"
@@ -12,6 +13,18 @@ headers = {
 }
 
 os.makedirs("cache", exist_ok=True)
+os.makedirs("output", exist_ok=True)
+
+class Book(BaseModel):
+    title: str
+    product_url:str
+    price_text: str
+    price_gbp:float
+    availability_text: str
+    rating_text: str
+    description: str | None
+    source_page: str
+    fetched_at: str
 
 books = []
 page_url = url
@@ -130,3 +143,64 @@ print(f"detail_pages={len(records)}")
 
 print("\nONE RAW RECORD:")
 print(records[0])
+
+valid_records = []
+errors = []
+
+for record in records:
+    try:
+        price_text = record["price_text"]
+
+        price_gbp = float(
+            price_text.replace("Â£", "").replace("£", "").strip()
+        )
+        record["price_gbp"] = price_gbp
+        if not record["product_url"].startswith("https://"):
+            raise ValueError("product_url must start with https://")
+
+        if not record["source_page"].startswith("https://"):
+           raise ValueError("source_page must start with https://")
+        book = Book(**record)
+        valid_records.append(book.model_dump(mode="json"))
+
+
+    except Exception as e:
+
+        errors.append({
+            "record": record,
+            "reason": str(e)
+        })
+
+unique_records = {}
+ 
+for record in valid_records:
+
+    unique_records[str(record["product_url"])] = record
+
+valid_records = list(unique_records.values())
+
+with open("output/books.json", "w", encoding="utf-8") as f:
+
+    json.dump(
+        valid_records,
+        f,
+        indent=2,
+        ensure_ascii=False
+    )
+
+with open("output/errors.json", "w", encoding="utf-8") as f:
+
+    json.dump(
+        errors,
+        f,
+        indent=2,
+        ensure_ascii=False
+    )
+
+print("\nSTAGE 4 SUMMARY")
+
+print(f"valid_records={len(valid_records)}")
+print(f"invalid_records={len(errors)}")
+
+print("Saved: output/books.json")
+print("Saved: output/errors.json")
